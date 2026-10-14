@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣露營地圖 Prototype - 苗栗泰安篇</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Font Awesome 圖示 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        #map { height: calc(100vh - 70px); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 flex flex-col h-screen overflow-hidden">
+
+    <!-- 頂部導覽列 -->
+    <header class="bg-emerald-800 text-white px-6 py-3 flex items-center justify-between shadow-md z-20 h-[70px]">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid font-bold fa-campground text-2xl text-emerald-300"></i>
+            <h1 class="text-xl font-bold tracking-wide">TaiwanCamp 地圖搜尋 <span class="text-xs bg-emerald-600 px-2 py-1 rounded text-emerald-100 font-normal">泰安試驗版</span></h1>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span class="text-sm bg-emerald-700/60 border border-emerald-500 px-3 py-1 rounded-full text-emerald-100">
+                <i class="fa-solid fa-location-dot mr-1"></i> 目前區域：苗栗縣 ➔ 泰安鄉
+            </span>
+        </div>
+    </header>
+
+    <!-- 主要內容區：左側控制面板 + 右側地圖 -->
+    <div class="flex flex-1 overflow-hidden relative">
+
+        <!-- 左側側邊欄 -->
+        <aside class="w-full md:w-[420px] bg-white flex flex-col border-r border-slate-200 z-10 shadow-lg">
+            
+            <!-- 區域特色卡片 (District Feature Summary) -->
+            <div class="p-4 bg-emerald-50/80 border-b border-emerald-100">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="font-bold text-emerald-900 flex items-center gap-2">
+                        <i class="fa-solid fa-mountain text-emerald-600"></i> 泰安鄉露營特色懶人包
+                    </h2>
+                    <span class="text-xs text-emerald-700 font-medium bg-emerald-200/60 px-2 py-0.5 rounded">AI 評論總結</span>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    海拔約 600m - 1,200m，以<strong class="text-emerald-800">壯麗雲海、夜景與高海拔避暑</strong>聞名。多數營地衛浴清潔度佳，但<strong class="text-amber-800">最後 3-5 公里產業道路較窄陡、會車較不易</strong>，建議新手白天下山/上山。
+                </p>
+            </div>
+
+            <!-- 搜尋與標籤篩選區 -->
+            <div class="p-4 border-b border-slate-200 space-y-3 bg-slate-50">
+                <div class="relative">
+                    <input type="text" id="searchInput" placeholder="搜尋營地名稱、地址..." 
+                           class="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
+                </div>
+
+                <!-- 快速標籤過濾 -->
+                <div>
+                    <div class="text-xs font-semibold text-slate-500 mb-1.5">快速標籤篩選 (複選)：</div>
+                    <div class="flex flex-wrap gap-1.5" id="tagFilters">
+                        <button onclick="toggleTag('草地')" class="tag-btn text-xs px-2.5 py-1 rounded-full border border-slate-300 bg-white hover:bg-emerald-50 text-slate-600">草地</button>
+                        <button onclick="toggleTag('棧板')" class="tag-btn text-xs px-2.5 py-1 rounded-full border border-slate-300 bg-white hover:bg-emerald-50 text-slate-600">棧板</button>
+                        <button onclick="toggleTag('雨棚')" class="tag-btn text-xs px-2.5 py-1 rounded-full border border-slate-300 bg-white hover:bg-emerald-50 text-slate-600">雨棚</button>
+                        <button onclick="toggleTag('雲海')" class="tag-btn text-xs px-2.5 py-1 rounded-full border border-slate-300 bg-white hover:bg-emerald-50 text-slate-600">雲海</button>
+                        <button onclick="toggleTag('高海拔')" class="tag-btn text-xs px-2.5 py-1 rounded-full border border-slate-300 bg-white hover:bg-emerald-50 text-slate-600">高海拔</button>
+                        <button onclick="toggleTag('寵物友善')" class="tag-btn text-xs px-2.5 py-1 rounded-full border border-slate-300 bg-white hover:bg-emerald-50 text-slate-600">寵物友善</button>
+                        <button onclick="toggleTag('路況良好')" class="tag-btn text-xs px-2.5 py-1 rounded-full border border-slate-300 bg-white hover:bg-emerald-50 text-slate-600">路況良好</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 營地列表 -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3" id="campsiteList">
+                <!-- 列表將由 JavaScript 動態生成 -->
+            </div>
+        </aside>
+
+        <!-- 右側地圖視圖 -->
+        <main class="flex-1 relative">
+            <div id="map"></div>
+        </main>
+    </div>
+
+    <!-- 營地詳細資訊 Modal -->
+    <div id="detailModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-4 bg-emerald-800 text-white flex justify-between items-center">
+                <div>
+                    <h3 id="modalTitle" class="text-xl font-bold">營地名稱</h3>
+                    <p id="modalAddress" class="text-xs text-emerald-200 mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i>地址</p>
+                </div>
+                <button onclick="closeModal()" class="text-white/80 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="p-5 overflow-y-auto custom-scrollbar space-y-4 text-sm">
+                <!-- 聯絡電話 & Google 評分 -->
+                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <div>
+                        <div class="text-xs text-slate-500">Google 評分</div>
+                        <div class="text-lg font-bold text-amber-500 flex items-center gap-1">
+                            <i class="fa-solid fa-star"></i> <span id="modalGoogleRating">4.5</span>
+                            <span id="modalReviewsCount" class="text-xs text-slate-400 font-normal">(120則評論)</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-500">營地電話</div>
+                        <div id="modalPhone" class="font-medium text-slate-800">0912-345-678</div>
+                    </div>
+                </div>
+
+                <!-- 三大關鍵評分指標 -->
+                <div>
+                    <h4 class="font-bold text-slate-700 mb-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-chart-simple text-emerald-600"></i> AI 結構化評分指標 (1-5分)
+                    </h4>
+                    <div class="space-y-2.5 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div>
+                            <div class="flex justify-between text-xs font-medium text-slate-600 mb-1">
+                                <span>衛浴整潔度</span>
+                                <span id="scoreCleanText" class="font-bold text-emerald-700">4.8 / 5</span>
+                            </div>
+                            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                                <div id="scoreCleanBar" class="bg-emerald-500 h-2 rounded-full" style="width: 96%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-medium text-slate-600 mb-1">
+                                <span>環境管理 & 靜音表現</span>
+                                <span id="scoreManageText" class="font-bold text-blue-700">4.5 / 5</span>
+                            </div>
+                            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                                <div id="scoreManageBar" class="bg-blue-500 h-2 rounded-full" style="width: 90%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-medium text-slate-600 mb-1">
+                                <span>抵達難易度 (越高越好走)</span>
+                                <span id="scoreRoadText" class="font-bold text-amber-700">3.2 / 5</span>
+                            </div>
+                            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                                <div id="scoreRoadBar" class="bg-amber-500 h-2 rounded-full" style="width: 64%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 設施與環境標籤 -->
+                <div>
+                    <h4 class="font-bold text-slate-700 mb-2">營地特色標籤</h4>
+                    <div id="modalTags" class="flex flex-wrap gap-1.5"></div>
+                </div>
+
+                <!-- AI 評論重點摘要 -->
+                <div>
+                    <h4 class="font-bold text-slate-700 mb-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-comments text-emerald-600"></i> Google 評論重點摘要
+                    </h4>
+                    <ul id="modalSummaries" class="list-disc list-inside space-y-1 text-xs text-slate-600 bg-emerald-50/50 p-3 rounded-lg border border-emerald-100">
+                    </ul>
+                </div>
+            </div>
+
+            <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-end">
+                <button onclick="closeModal()" class="px-4 py-2 bg-slate-600 text-white rounded-lg text-xs hover:bg-slate-700">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript 邏輯 -->
+    <script>
+        // 苗栗泰安 10 個熱門營地測試資料
+        const campsites = [
+            {
+                id: 1,
+                name: "鑽石林露營區",
+                lat: 24.4378,
+                lng: 120.9412,
+                phone: "0910-282-690",
+                address: "苗栗縣泰安鄉錦水村村6鄰",
+                googleRating: 4.4,
+                reviewsCount: 680,
+                tags: ["草地", "棧板", "雨棚", "雲海", "高海拔", "寵物友善"],
+                scores: { cleanliness: 4.3, management: 4.2, road: 3.0 },
+                summaries: [
+                    "高海拔視角極佳，秋冬季節極容易看到壯觀雲海。",
+                    "營位區分多，碎石與草地、雨棚區皆有設定。",
+                    "最後一段上坡產業道路較窄，會車需稍加留意。"
+                ]
+            },
+            {
+                id: 2,
+                name: "烏嘎彥露營區",
+                lat: 24.4395,
+                lng: 120.9388,
+                phone: "0925-000-609",
+                address: "苗栗縣泰安鄉高熊垣136號",
+                googleRating: 4.5,
+                reviewsCount: 820,
+                tags: ["草地", "雲海", "高海拔", "竹林秘境", "夜景"],
+                scores: { cleanliness: 4.5, management: 4.4, road: 2.8 },
+                summaries: [
+                    "旁邊就是著名的烏嘎彥竹林隧道，風景宛如日本嵐山。",
+                    "頂層營位視野無限好，夕陽與夜景非常震撼。",
+                    "路況較為陡峭，新手駕駛建議提早於白天抵達。"
+                ]
+            },
+            {
+                id: 3,
+                name: "泰安覓境露營區",
+                lat: 24.4532,
+                lng: 120.9631,
+                phone: "0955-810-825",
+                address: "苗栗縣泰安鄉錦水村圓墩39-1號",
+                googleRating: 4.7,
+                reviewsCount: 310,
+                tags: ["草地", "木棧板", "樹蔭", "路況良好", "衛浴高檔"],
+                scores: { cleanliness: 4.9, management: 4.8, road: 4.5 },
+                summaries: [
+                    "離溫泉區很近，沿途道路平緩，完全不需要走危險山路！",
+                    "營區樹木充沛，夏天遮陽效果極佳，營主維護非常用心。",
+                    "衛浴設施乾淨如飯店，水壓穩定大推。"
+                ]
+            },
+            {
+                id: 4,
+                name: "耀婆山露營區",
+                lat: 24.4421,
+                lng: 120.9455,
+                phone: "0910-065-802",
+                address: "苗栗縣泰安鄉錦水村",
+                googleRating: 4.6,
+                reviewsCount: 420,
+                tags: ["草地", "雲海", "高海拔", "寵物友善", "夜景"],
+                scores: { cleanliness: 4.6, management: 4.5, road: 3.2 },
+                summaries: [
+                    "正對耀婆山山頭，地勢雄偉，山景氣勢磅礡。",
+                    "草皮保養得非常好，踩起來很舒服。",
+                    "營主晚上會提醒大家降低音量，靜音品質好。"
+                ]
+            },
+            {
+                id: 5,
+                name: "土牧驛健康農莊露營區",
+                lat: 24.4682,
+                lng: 120.9780,
+                phone: "0905-630-811",
+                address: "苗栗縣泰安鄉八卦村4鄰",
+                googleRating: 4.6,
+                reviewsCount: 550,
+                tags: ["草地", "親水溪邊", "超大草皮", "路況良好", "寵物友善"],
+                scores: { cleanliness: 4.7, management: 4.6, road: 4.2 },
+                summaries: [
+                    "營區緊鄰清澈小溪，夏天小朋友可以安全玩水捕魚。",
+                    "腹地極大，草皮寬廣，活動空間充足。",
+                    "道路好走，車輛可直接駛至營位旁卸裝備。"
+                ]
+            },
+            {
+                id: 6,
+                name: "放牛吃草露營區",
+                lat: 24.4361,
+                lng: 120.9392,
+                phone: "0980-008-000",
+                address: "苗栗縣泰安鄉錦水村",
+                googleRating: 4.5,
+                reviewsCount: 290,
+                tags: ["草地", "雲海", "夜景", "高海拔", "小巧溫馨"],
+                scores: { cleanliness: 4.4, management: 4.6, road: 3.0 },
+                summaries: [
+                    "梯田式營位設計，視野不會被前排帳篷擋住。",
+                    "夜晚能直接遠眺苗栗市區夜景，浪漫度高。",
+                    "營主非常熱情，會協助引導停車與下裝備。"
+                ]
+            },
+            {
+                id: 7,
+                name: "洗水山露營區",
+                lat: 24.4290,
+                lng: 120.9335,
+                phone: "0928-000-123",
+                address: "苗栗縣泰安鄉清安村",
+                googleRating: 4.3,
+                reviewsCount: 240,
+                tags: ["草地", "雲海", "高海拔", "森林系", "櫻花季"],
+                scores: { cleanliness: 4.2, management: 4.3, road: 2.5 },
+                summaries: [
+                    "海拔將近 1000 公尺，春天有滿山櫻花開非常美麗。",
+                    "雲海經常滿溢到腳邊，很有仙境感覺。",
+                    "山路最後一公里比較陡，車力較弱者建議打低速檔。"
+                ]
+            },
+            {
+                id: 8,
+                name: "泰安拿六露營區",
+                lat: 24.4410,
+                lng: 120.9480,
+                phone: "0932-668-232",
+                address: "苗栗縣泰安鄉錦水村",
+                googleRating: 4.7,
+                reviewsCount: 180,
+                tags: ["棧板", "草地", "雲海", "小包區", "靜音優質"],
+                scores: { cleanliness: 4.8, management: 4.9, road: 3.3 },
+                summaries: [
+                    "營主管理嚴謹，晚上 10 點準時開始安靜，睡眠品質佳。",
+                    "木棧板尺寸大且保養極好，環境乾淨沒有蚊蟲。",
+                    "適合喜歡安靜露營的小團體包區。"
+                ]
+            },
+            {
+                id: 9,
+                name: "賽夏黃金溫泉露營區",
+                lat: 24.4611,
+                lng: 120.9698,
+                phone: "0937-005-520",
+                address: "苗栗縣泰安鄉錦水村",
+                googleRating: 4.4,
+                reviewsCount: 390,
+                tags: ["雨棚", "草地", "可泡湯/溫泉", "路況良好"],
+                scores: { cleanliness: 4.2, management: 4.1, road: 4.3 },
+                summaries: [
+                    "營區內直接有溫泉池可以泡湯，冬天來非常舒服。",
+                    "雨棚區空間大，下雨完全不影響露營興緻。",
+                    "路況極佳，不需要開險峻山路。"
+                ]
+            },
+            {
+                id: 10,
+                name: "瑪達法寶露營區",
+                lat: 24.4480,
+                lng: 120.9520,
+                phone: "0912-883-350",
+                address: "苗栗縣泰安鄉清安村大坪部落",
+                googleRating: 4.5,
+                reviewsCount: 210,
+                tags: ["草地", "雨棚", "螢火蟲", "原民特色", "寵物友善"],
+                scores: { cleanliness: 4.5, management: 4.5, road: 3.5 },
+                summaries: [
+                    "每年4-5月螢火蟲數量非常多，直接在帳篷旁飛舞。",
+                    "草皮厚實如綠色地毯，踩起來很舒服。",
+                    "營主親切，常會分享原住民文化與私房景點。"
+                ]
+            }
+        ];
+
+        // 地圖初始化 (苗栗泰安區域中心點)
+        const map = L.map('map').setView([24.445, 120.950], 13);
+
+        // 使用 OpenStreetMap 圖層
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let markers = {};
+        let activeSelectedTags = new Set();
+
+        // 渲染地圖 Marker 及清單
+        function renderCampsites(filteredList) {
+            // 清空地圖 Marker
+            Object.values(markers).forEach(m => map.removeLayer(m));
+            markers = {};
+
+            const listContainer = document.getElementById('campsiteList');
+            listContainer.innerHTML = '';
+
+            if (filteredList.length === 0) {
+                listContainer.innerHTML = `<div class="text-center text-slate-400 py-8 text-sm">沒有符合條件的營地</div>`;
+                return;
+            }
+
+            filteredList.forEach(camp => {
+                // 1. 建立地圖 Marker
+                const marker = L.marker([camp.lat, camp.lng]).addTo(map);
+                marker.bindPopup(`
+                    <div class="p-1">
+                        <strong class="text-emerald-800 text-sm">${camp.name}</strong><br>
+                        <span class="text-xs text-amber-600">★ ${camp.googleRating}</span> | 
+                        <span class="text-xs text-slate-500">衛浴: ${camp.scores.cleanliness}分</span><br>
+                        <button onclick="openModal(${camp.id})" class="mt-2 text-xs bg-emerald-600 text-white px-2 py-1 rounded w-full">查看詳情</button>
+                    </div>
+                `);
+                markers[camp.id] = marker;
+
+                // 2. 建立左側列表卡片
+                const card = document.createElement('div');
+                card.className = "bg-white p-3.5 rounded-xl border border-slate-200 hover:border-emerald-400 hover:shadow-md transition cursor-pointer space-y-2";
+                card.onclick = () => {
+                    map.flyTo([camp.lat, camp.lng], 15);
+                    marker.openPopup();
+                };
+
+                const tagBadges = camp.tags.map(t => `<span class="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-md border border-slate-200">${t}</span>`).join(' ');
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base hover:text-emerald-700">${camp.name}</h3>
+                            <div class="text-xs text-slate-500 mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i>${camp.address}</div>
+                        </div>
+                        <span class="bg-amber-50 text-amber-700 text-xs font-bold px-2 py-1 rounded-lg border border-amber-200 flex items-center gap-1">
+                            <i class="fa-solid fa-star text-amber-500"></i> ${camp.googleRating}
+                        </span>
+                    </div>
+
+                    <!-- 三大維度分數簡報 -->
+                    <div class="grid grid-cols-3 gap-1 bg-slate-50 p-1.5 rounded-lg text-center text-[11px] border border-slate-100">
+                        <div>
+                            <span class="text-slate-400 block text-[9px]">衛浴整潔</span>
+                            <span class="font-bold text-emerald-700">${camp.scores.cleanliness}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block text-[9px]">環境管理</span>
+                            <span class="font-bold text-blue-700">${camp.scores.management}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block text-[9px]">路況難易</span>
+                            <span class="font-bold text-amber-700">${camp.scores.road}</span>
+                        </div>
+                    </div>
+
+                    <!-- 標籤牆 -->
+                    <div class="flex flex-wrap gap-1">${tagBadges}</div>
+
+                    <div class="flex justify-end pt-1">
+                        <button onclick="event.stopPropagation(); openModal(${camp.id})" class="text-xs text-emerald-700 font-semibold hover:underline">
+                            詳情與評論摘要 <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </button>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        // 標籤切換邏輯
+        function toggleTag(tagName) {
+            const btns = document.querySelectorAll('.tag-btn');
+            btns.forEach(btn => {
+                if (btn.innerText === tagName) {
+                    if (activeSelectedTags.has(tagName)) {
+                        activeSelectedTags.delete(tagName);
+                        btn.classList.remove('bg-emerald-600', 'text-white', 'border-emerald-600');
+                        btn.classList.add('bg-white', 'text-slate-600');
+                    } else {
+                        activeSelectedTags.add(tagName);
+                        btn.classList.add('bg-emerald-600', 'text-white', 'border-emerald-600');
+                        btn.classList.remove('bg-white', 'text-slate-600');
+                    }
+                }
+            });
+            filterCampsites();
+        }
+
+        // 複合過濾器邏輯
+        function filterCampsites() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = campsites.filter(camp => {
+                const matchSearch = camp.name.toLowerCase().includes(query) || camp.address.toLowerCase().includes(query);
+                const matchTags = Array.from(activeSelectedTags).every(tag => camp.tags.includes(tag));
+                return matchSearch && matchTags;
+            });
+            renderCampsites(filtered);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', filterCampsites);
+
+        // 打開 Modal 詳情
+        function openModal(id) {
+            const camp = campsites.find(c => c.id === id);
+            if (!camp) return;
+
+            document.getElementById('modalTitle').innerText = camp.name;
+            document.getElementById('modalAddress').innerHTML = `<i class="fa-solid fa-location-dot mr-1"></i>${camp.address}`;
+            document.getElementById('modalGoogleRating').innerText = camp.googleRating;
+            document.getElementById('modalReviewsCount').innerText = `(${camp.reviewsCount} 則評論)`;
+            document.getElementById('modalPhone').innerText = camp.phone;
+
+            // 分數條設定
+            document.getElementById('scoreCleanText').innerText = `${camp.scores.cleanliness} / 5.0`;
+            document.getElementById('scoreCleanBar').style.width = `${(camp.scores.cleanliness / 5) * 100}%`;
+
+            document.getElementById('scoreManageText').innerText = `${camp.scores.management} / 5.0`;
+            document.getElementById('scoreManageBar').style.width = `${(camp.scores.management / 5) * 100}%`;
+
+            document.getElementById('scoreRoadText').innerText = `${camp.scores.road} / 5.0`;
+            document.getElementById('scoreRoadBar').style.width = `${(camp.scores.road / 5) * 100}%`;
+
+            // 標籤
+            const tagsContainer = document.getElementById('modalTags');
+            tagsContainer.innerHTML = camp.tags.map(t => `<span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full border border-emerald-200 font-medium">${t}</span>`).join(' ');
+
+            // 評論摘要
+            const summaryContainer = document.getElementById('modalSummaries');
+            summaryContainer.innerHTML = camp.summaries.map(s => `<li class="leading-relaxed">${s}</li>`).join('');
+
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').classList.add('hidden');
+        }
+
+        // 初始渲染
+        renderCampsites(campsites);
+    </script>
+</body>
+</html>
