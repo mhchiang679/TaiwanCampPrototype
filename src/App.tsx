@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Tent, MapPin, Database, Sparkles, ChevronDown } from 'lucide-react';
+import { MapPin, Database, Sparkles, ChevronDown } from 'lucide-react';
 import { Campsite } from './types';
 import { districtSummaries, AVAILABLE_TAGS } from './data/taianCampsites';
 import { fetchCampsitesByDistrict, isSupabaseConfigured } from './services';
 import { Sidebar } from './components/Sidebar';
 import { CampingMap } from './components/Map';
 import { DetailModal } from './components/Campsite';
+import { SplashScreen, MountainLogo } from './components/Splash';
 
 const DISTRICT_LIST = [
   { name: '全部地區', city: '全台灣' },
@@ -33,6 +34,7 @@ export const App: React.FC = () => {
   const [selectedCampsite, setSelectedCampsite] = useState<Campsite | null>(null);
   const [detailModalCampsite, setDetailModalCampsite] = useState<Campsite | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [showSplash, setShowSplash] = useState<boolean>(true);
 
   const supabaseActive = isSupabaseConfigured();
   const currentSummary = districtSummaries[selectedDistrict] || districtSummaries['泰安鄉'];
@@ -113,9 +115,7 @@ export const App: React.FC = () => {
       {/* 頂部導覽列 Header */}
       <header className="bg-gradient-to-r from-sky-600 via-sky-700 to-blue-700 text-white px-4 md:px-6 py-3 flex items-center justify-between shadow-md z-20 h-[70px] flex-shrink-0">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center shadow-inner backdrop-blur-xs">
-            <Tent className="w-5 h-5 text-sky-200" />
-          </div>
+          <MountainLogo className="w-10 h-10 flex-shrink-0 drop-shadow" />
           <div>
             <h1 className="text-lg md:text-xl font-bold tracking-wide flex items-center gap-2">
               TaiwanCamp 地圖搜尋
@@ -208,6 +208,9 @@ export const App: React.FC = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
       />
+
+      {/* 進站動畫 */}
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
     </div>
   );
 };
