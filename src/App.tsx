@@ -8,6 +8,9 @@ import { CampingMap } from './components/Map';
 import { DetailModal } from './components/Campsite';
 import { SplashScreen, MountainLogo } from './components/Splash';
 
+// 固定的空陣列，避免每次重新渲染都讓地圖重設視角
+const NO_CAMPSITES: Campsite[] = [];
+
 const DISTRICT_LIST = [
   { name: '全部地區', city: '全台灣' },
   { name: '泰安鄉', city: '苗栗縣' },
@@ -83,6 +86,9 @@ export const App: React.FC = () => {
       return matchSearch && matchTags && matchCleanliness && matchRoad;
     });
   }, [allCampsites, searchQuery, selectedTags, minCleanliness, minRoad]);
+
+  // 只有輸入關鍵字或勾選標籤後，左側列表與地圖才會顯示營區
+  const hasActiveSearch = searchQuery.trim().length > 0 || selectedTags.length > 0;
 
   // Toggle tag selection
   const handleToggleTag = (tag: string) => {
@@ -195,10 +201,10 @@ export const App: React.FC = () => {
         {/* 右側 Leaflet 地圖視圖 */}
         <main className="absolute inset-0 isolate z-0">
           <CampingMap
-            campsites={filteredCampsites}
+            campsites={hasActiveSearch ? filteredCampsites : NO_CAMPSITES}
             selectedCampsite={selectedCampsite}
             onOpenDetail={handleOpenDetail}
-            leftPanelOpen={searchQuery.trim().length > 0 || selectedTags.length > 0}
+            leftPanelOpen={hasActiveSearch}
           />
         </main>
       </div>

@@ -11,6 +11,10 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
+// 台灣全島預設視角
+const TAIWAN_CENTER: L.LatLngExpression = [23.7, 120.95];
+const TAIWAN_ZOOM = 8;
+
 interface CampingMapProps {
   campsites: Campsite[];
   selectedCampsite: Campsite | null;
@@ -38,8 +42,8 @@ export const CampingMap: React.FC<CampingMapProps> = ({
     // Check if map already exists
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
-        center: [24.445, 120.950],
-        zoom: 13,
+        center: TAIWAN_CENTER,
+        zoom: TAIWAN_ZOOM,
         zoomControl: false,
       });
 
@@ -223,8 +227,10 @@ export const CampingMap: React.FC<CampingMapProps> = ({
       markersRef.current[camp.id] = marker;
     });
 
-    // Auto-fit bounds if campsites exist
-    if (campsites.length > 0) {
+    // 沒有營區時回到台灣全島視角；有營區時自動縮放到這些營區
+    if (campsites.length === 0) {
+      map.setView(TAIWAN_CENTER, TAIWAN_ZOOM, { animate: true });
+    } else {
       const markersList = Object.values(markersRef.current);
       if (markersList.length > 0) {
         const group = L.featureGroup(markersList);
