@@ -1,7 +1,6 @@
 import React from 'react';
-import { Tent, X } from 'lucide-react';
-import { Campsite, DistrictSummary } from '../../types';
-import { DistrictSummaryCard } from './DistrictSummaryCard';
+import { Tent, X, Search } from 'lucide-react';
+import { Campsite } from '../../types';
 import { SearchBar } from './SearchBar';
 import { TagDropdown } from './TagDropdown';
 import { AdvancedScoreFilter } from './AdvancedScoreFilter';
@@ -9,7 +8,6 @@ import { CampsiteCard } from '../Campsite';
 
 
 interface SidebarProps {
-  districtSummary: DistrictSummary;
   campsites: Campsite[];
   allTags: string[];
   searchQuery: string;
@@ -28,7 +26,6 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-  districtSummary,
   campsites,
   allTags,
   searchQuery,
@@ -45,6 +42,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectCampsite,
   onOpenDetail,
 }) => {
+  // 只有輸入關鍵字或勾選標籤後才顯示推薦營區
+  const hasActiveSearch = searchQuery.trim().length > 0 || selectedTags.length > 0;
+
   return (
     <aside className="w-full md:w-[420px] bg-white flex flex-col border-r border-slate-200 z-10 shadow-lg h-full min-h-0">
       {/* Google Maps 風格搜尋列：搜尋框 + 右側特色標籤按鈕 */}
@@ -57,6 +57,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onToggleTag={onToggleTag}
             onClearTags={onClearTags}
             resultCount={campsites.length}
+            extraFilters={
+              <AdvancedScoreFilter
+                minCleanliness={minCleanliness}
+                onMinCleanlinessChange={onMinCleanlinessChange}
+                minRoad={minRoad}
+                onMinRoadChange={onMinRoadChange}
+                onReset={onResetAdvancedFilters}
+              />
+            }
           />
         </div>
 
@@ -86,50 +95,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
       </div>
 
-      {/* 區域特色卡片 (District Feature Summary) */}
-      <DistrictSummaryCard summary={districtSummary} />
-
-      {/* 進階評分篩選 */}
-      <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/80">
-        <AdvancedScoreFilter
-          minCleanliness={minCleanliness}
-          onMinCleanlinessChange={onMinCleanlinessChange}
-          minRoad={minRoad}
-          onMinRoadChange={onMinRoadChange}
-          onReset={onResetAdvancedFilters}
-        />
-      </div>
-
-      {/* 營地列表計數 */}
-      <div className="px-4 py-2 bg-slate-100/70 border-b border-slate-200/60 flex items-center justify-between text-xs text-slate-500 font-medium">
-        <span>營地清單 ({campsites.length} 間)</span>
-        {(searchQuery || selectedTags.length > 0) && (
-          <span className="text-sky-700 bg-sky-100/80 px-2.5 py-0.5 rounded-full text-[10px] font-semibold">
-            已套用篩選
-          </span>
-        )}
-      </div>
-
-      {/* 營地列表 */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
-        {campsites.length === 0 ? (
-          <div className="text-center text-slate-400 py-12 space-y-2">
-            <Tent className="w-10 h-10 mx-auto text-slate-300 stroke-[1.5]" />
-            <div className="text-sm font-medium text-slate-600">沒有符合條件的營地</div>
-            <div className="text-xs text-slate-400">請嘗試調整搜尋關鍵字或減少標籤條件</div>
+      {hasActiveSearch ? (
+        <>
+          {/* 營地列表計數 */}
+          <div className="px-4 py-2 bg-slate-50 border-b border-slate-200/60 text-xs text-slate-500 font-medium">
+            推薦營區 ({campsites.length} 間)
           </div>
-        ) : (
-          campsites.map((camp) => (
-            <CampsiteCard
-              key={camp.id}
-              campsite={camp}
-              isSelected={selectedCampsite?.id === camp.id}
-              onSelect={onSelectCampsite}
-              onOpenDetail={onOpenDetail}
-            />
-          ))
-        )}
-      </div>
+
+          {/* 營地列表 */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
+            {campsites.length === 0 ? (
+              <div className="text-center text-slate-400 py-12 space-y-2">
+                <Tent className="w-10 h-10 mx-auto text-slate-300 stroke-[1.5]" />
+                <div className="text-sm font-medium text-slate-600">沒有符合條件的營地</div>
+                <div className="text-xs text-slate-400">請嘗試調整搜尋關鍵字或減少標籤條件</div>
+              </div>
+            ) : (
+              campsites.map((camp) => (
+                <CampsiteCard
+                  key={camp.id}
+                  campsite={camp}
+                  isSelected={selectedCampsite?.id === camp.id}
+                  onSelect={onSelectCampsite}
+                  onOpenDetail={onOpenDetail}
+                />
+              ))
+            )}
+          </div>
+        </>
+      ) : (
+        /* 預設狀態：尚未搜尋 */
+        <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center px-8 text-slate-400 space-y-2">
+          <Search className="w-8 h-8 text-slate-300 stroke-[1.5]" />
+          <div className="text-sm text-slate-500">輸入關鍵字或選擇特色標籤</div>
+          <div className="text-xs">AI 會依評分為你推薦合適的營區</div>
+        </div>
+      )}
     </aside>
   );
 };
