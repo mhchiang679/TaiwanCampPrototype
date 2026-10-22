@@ -1,9 +1,9 @@
 import React from 'react';
-import { Tent } from 'lucide-react';
+import { Tent, X } from 'lucide-react';
 import { Campsite, DistrictSummary } from '../../types';
 import { DistrictSummaryCard } from './DistrictSummaryCard';
 import { SearchBar } from './SearchBar';
-import { TagFilter } from './TagFilter';
+import { TagDropdown } from './TagDropdown';
 import { AdvancedScoreFilter } from './AdvancedScoreFilter';
 import { CampsiteCard } from '../Campsite';
 
@@ -46,19 +46,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenDetail,
 }) => {
   return (
-    <aside className="w-full md:w-[420px] bg-white flex flex-col border-r border-slate-200 z-10 shadow-lg h-full overflow-hidden">
+    <aside className="w-full md:w-[420px] bg-white flex flex-col border-r border-slate-200 z-10 shadow-lg h-full min-h-0">
+      {/* Google Maps 風格搜尋列：搜尋框 + 右側特色標籤按鈕 */}
+      <div className="px-3 pt-3 pb-2 bg-white border-b border-slate-100 space-y-2 relative z-20">
+        <div className="flex items-center gap-2">
+          <SearchBar value={searchQuery} onChange={onSearchChange} />
+          <TagDropdown
+            availableTags={allTags}
+            selectedTags={selectedTags}
+            onToggleTag={onToggleTag}
+            onClearTags={onClearTags}
+            resultCount={campsites.length}
+          />
+        </div>
+
+        {/* 已選標籤，點擊即可移除 */}
+        {selectedTags.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {selectedTags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => onToggleTag(tag)}
+                className="text-xs pl-2.5 pr-1.5 py-1 rounded-full bg-sky-50 text-sky-800 border border-sky-200 hover:bg-sky-100 flex items-center gap-1 transition cursor-pointer"
+                aria-label={`移除標籤 ${tag}`}
+              >
+                <span>{tag}</span>
+                <X className="w-3 h-3" />
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={onClearTags}
+              className="text-xs text-slate-500 hover:text-slate-800 hover:underline px-1 cursor-pointer"
+            >
+              清除全部
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* 區域特色卡片 (District Feature Summary) */}
       <DistrictSummaryCard summary={districtSummary} />
 
-      {/* 搜尋與標籤篩選區 */}
-      <div className="p-4 border-b border-slate-200 space-y-3 bg-slate-50/80">
-        <SearchBar value={searchQuery} onChange={onSearchChange} />
-        <TagFilter
-          availableTags={allTags}
-          selectedTags={selectedTags}
-          onToggleTag={onToggleTag}
-          onClearTags={onClearTags}
-        />
+      {/* 進階評分篩選 */}
+      <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/80">
         <AdvancedScoreFilter
           minCleanliness={minCleanliness}
           onMinCleanlinessChange={onMinCleanlinessChange}
@@ -79,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* 營地列表 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
         {campsites.length === 0 ? (
           <div className="text-center text-slate-400 py-12 space-y-2">
             <Tent className="w-10 h-10 mx-auto text-slate-300 stroke-[1.5]" />
