@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tent, X, Search } from 'lucide-react';
+import { Tent, X } from 'lucide-react';
 import { Campsite } from '../../types';
 import { SearchBar } from './SearchBar';
 import { TagDropdown } from './TagDropdown';
@@ -46,9 +46,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const hasActiveSearch = searchQuery.trim().length > 0 || selectedTags.length > 0;
 
   return (
-    <aside className="w-full md:w-[420px] bg-white flex flex-col border-r border-slate-200 z-10 shadow-lg h-full min-h-0">
-      {/* Google Maps 風格搜尋列：搜尋框 + 右側特色標籤按鈕 */}
-      <div className="px-3 pt-3 pb-2 bg-white border-b border-slate-100 space-y-2 relative z-20">
+    <aside
+      className={`absolute top-0 left-0 z-10 w-full md:w-[420px] flex flex-col min-h-0 ${
+        hasActiveSearch
+          ? 'bottom-0 bg-white border-r border-slate-200 shadow-lg'
+          : 'pointer-events-none'
+      }`}
+    >
+      {/* Google Maps 風格搜尋列：搜尋框 + 右側特色標籤按鈕（未搜尋時直接浮在地圖上） */}
+      <div
+        className={`px-3 pt-3 pb-2 space-y-2 relative z-20 pointer-events-auto ${
+          hasActiveSearch ? 'bg-white border-b border-slate-100' : ''
+        }`}
+      >
         <div className="flex items-center gap-2">
           <SearchBar value={searchQuery} onChange={onSearchChange} />
           <TagDropdown
@@ -123,14 +133,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
         </>
-      ) : (
-        /* 預設狀態：尚未搜尋 */
-        <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center px-8 text-slate-400 space-y-2">
-          <Search className="w-8 h-8 text-slate-300 stroke-[1.5]" />
-          <div className="text-sm text-slate-500">輸入關鍵字或選擇特色標籤</div>
-          <div className="text-xs">AI 會依評分為你推薦合適的營區</div>
-        </div>
-      )}
+      ) : null}
     </aside>
   );
 };

@@ -15,13 +15,18 @@ interface CampingMapProps {
   campsites: Campsite[];
   selectedCampsite: Campsite | null;
   onOpenDetail: (campsite: Campsite) => void;
+  /** 左側結果面板是否展開（展開時地圖縮放會避開面板） */
+  leftPanelOpen?: boolean;
 }
 
 export const CampingMap: React.FC<CampingMapProps> = ({
   campsites,
   selectedCampsite,
   onOpenDetail,
+  leftPanelOpen = false,
 }) => {
+  const leftPanelOpenRef = useRef<boolean>(leftPanelOpen);
+  leftPanelOpenRef.current = leftPanelOpen;
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [id: number]: L.Marker }>({});
@@ -35,8 +40,11 @@ export const CampingMap: React.FC<CampingMapProps> = ({
       const map = L.map(mapContainerRef.current, {
         center: [24.445, 120.950],
         zoom: 13,
-        zoomControl: true,
+        zoomControl: false,
       });
+
+      // 左上角留給浮動搜尋列，縮放按鈕移到右下角
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
@@ -220,7 +228,15 @@ export const CampingMap: React.FC<CampingMapProps> = ({
       const markersList = Object.values(markersRef.current);
       if (markersList.length > 0) {
         const group = L.featureGroup(markersList);
-        map.fitBounds(group.getBounds().pad(0.2), { maxZoom: 13, animate: true });
+        // 避開左上方的搜尋列與展開的結果面板
+        const isWide = window.innerWidth >= 768;
+        const leftInset = leftPanelOpenRef.current && isWide ? 440 : 20;
+        map.fitBounds(group.getBounds().pad(0.1), {
+          maxZoom: 13,
+          animate: true,
+          paddingTopLeft: [leftInset, 80],
+          paddingBottomRight: [20, 20],
+        });
       }
     }
   }, [campsites, onOpenDetail]);

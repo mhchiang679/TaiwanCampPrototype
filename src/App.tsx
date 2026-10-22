@@ -162,7 +162,7 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* 主要內容區：左側側邊欄 + 右側地圖 */}
+      {/* 主要內容區：全幅地圖 + 浮動搜尋列 / 搜尋後展開的結果面板 */}
       <div className="flex flex-1 overflow-hidden relative">
         {isLoading ? (
           <div className="absolute inset-0 z-30 bg-white/80 backdrop-blur-xs flex items-center justify-center">
@@ -193,11 +193,12 @@ export const App: React.FC = () => {
         />
 
         {/* 右側 Leaflet 地圖視圖 */}
-        <main className="flex-1 relative h-full isolate z-0">
+        <main className="absolute inset-0 isolate z-0">
           <CampingMap
             campsites={filteredCampsites}
             selectedCampsite={selectedCampsite}
             onOpenDetail={handleOpenDetail}
+            leftPanelOpen={searchQuery.trim().length > 0 || selectedTags.length > 0}
           />
         </main>
       </div>
