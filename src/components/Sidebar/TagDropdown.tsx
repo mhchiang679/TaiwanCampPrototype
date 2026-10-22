@@ -8,6 +8,8 @@ interface TagDropdownProps {
   onToggleTag: (tag: string) => void;
   onClearTags: () => void;
   resultCount: number;
+  /** 額外放在面板內的篩選器（例如 AI 評分滑桿） */
+  extraFilters?: React.ReactNode;
 }
 
 /**
@@ -20,6 +22,7 @@ export const TagDropdown: React.FC<TagDropdownProps> = ({
   onToggleTag,
   onClearTags,
   resultCount,
+  extraFilters,
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -86,13 +89,14 @@ export const TagDropdown: React.FC<TagDropdownProps> = ({
             </button>
           </div>
 
-          <div className="px-4 py-3 overflow-y-auto custom-scrollbar">
+          <div className="px-4 py-3 overflow-y-auto custom-scrollbar space-y-3">
             <TagFilter
               availableTags={availableTags}
               selectedTags={selectedTags}
               onToggleTag={onToggleTag}
               onClearTags={onClearTags}
             />
+            {extraFilters}
           </div>
 
           <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between gap-3">

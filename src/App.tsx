@@ -175,7 +175,6 @@ export const App: React.FC = () => {
 
         {/* 側邊欄 */}
         <Sidebar
-          districtSummary={currentSummary}
           campsites={filteredCampsites}
           allTags={AVAILABLE_TAGS}
           searchQuery={searchQuery}
